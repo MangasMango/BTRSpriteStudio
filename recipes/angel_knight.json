@@ -1,0 +1,7 @@
+{
+  "character": "angel",
+  "category": "none-playable character",
+  "model": "C:\\repos\\3dtoIsometric\\models\\playable character\\characterMedium\\characterMedium.fbx",
+  "package": "knight",
+  "deploy": "none-playable character/angel"
+}

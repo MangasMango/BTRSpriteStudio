@@ -1,0 +1,12 @@
+{
+  "character": "subservient",
+  "category": "none-playable character",
+  "deploy": "none-playable character/subservient",
+  "model": null,
+  "dirs": 16,
+  "gaps": ["default_idle", "default_walk", "armed_idle", "armed_walk", "armed_attack", "special_select", "special_death"],
+  "clips": [
+    { "clip": "special_working", "frames": 8, "fps": 6.0, "source": "procedural", "runtime": "hub prop, core/game.py" },
+    { "clip": "special_worship", "frames": 8, "fps": null, "source": "procedural", "runtime": "unreferenced" }
+  ]
+}

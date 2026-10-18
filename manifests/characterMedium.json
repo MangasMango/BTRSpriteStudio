@@ -1,0 +1,12 @@
+{
+  "character": "characterMedium",
+  "category": "reference",
+  "deploy": null,
+  "model": "models/playable character/characterMedium/characterMedium.fbx",
+  "dirs": 16,
+  "clips": [
+    { "clip": "idle", "frames": null, "fps": null, "source": "fbx-action", "note": "native anims/idle.fbx" },
+    { "clip": "jump", "frames": null, "fps": null, "source": "fbx-action", "note": "native anims/jump.fbx" },
+    { "clip": "run",  "frames": null, "fps": null, "source": "fbx-action", "note": "native anims/run.fbx" }
+  ]
+}

@@ -1,5 +1,5 @@
-# Copyright (C) 2026 Stamatis Valis
-# SPDX-License-Identifier: MIT
+﻿# Copyright (C) 2026 Stamatis Valis
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Generates isometric sprites: scans models/ and writes PNGs to output/.
 # Usage: .\run.ps1 [extra generate.py args, e.g. --frames 6 --dirs E,N,SE]
