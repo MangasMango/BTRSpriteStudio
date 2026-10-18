@@ -1,0 +1,17 @@
+{
+  "character": "warrior",
+  "category": "playable character",
+  "deploy": "playable character/warrior",
+  "model": null,
+  "model_note": "no warrior rig yet; renders via knight rig when available",
+  "dirs": 16,
+  "clips": [
+    { "clip": "armed_idle",     "frames": 1, "fps": 1.0, "source": "procedural" },
+    { "clip": "armed_walk",     "frames": 8, "fps": 8.0, "source": "procedural" },
+    { "clip": "armed_attack",   "frames": 8, "fps": 4.8, "source": "procedural", "note": "runtime retimes to 8/attack_seconds" },
+    { "clip": "default_idle",   "frames": 1, "fps": 1.0, "source": "procedural" },
+    { "clip": "default_walk",   "frames": 8, "fps": 8.0, "source": "procedural" },
+    { "clip": "special_select", "frames": 8, "fps": 4.0, "source": "procedural" },
+    { "clip": "special_death",  "frames": 8, "fps": null, "source": "procedural", "runtime": "unreferenced" }
+  ]
+}

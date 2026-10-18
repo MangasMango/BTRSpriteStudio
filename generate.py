@@ -1,5 +1,5 @@
-# Copyright (C) 2026 Stamatis Valis
-# SPDX-License-Identifier: MIT
+﻿# Copyright (C) 2026 Stamatis Valis
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Blender headless isometric sprite generator.
 #
@@ -41,6 +41,9 @@ from mathutils import Vector
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import procedural_anims
 import rig_map
+from model_io import (MODEL_EXTS, apply_textures, eval_world_bbox,
+                      find_texture_images, fix_materials, import_model,
+                      reset_scene, safe_name, world_bbox)
 
 # Same 16 compass directions the game's iso_engine.py uses.
 COMPASS = [
@@ -99,6 +102,37 @@ def parse_args():
                         '(fighter mode default: 33)')
     p.add_argument('--bone-map', default='',
                    help='explicit bone_map.json overriding auto bone mapping')
+    p.add_argument('--manifest', action='append', default=[],
+                   help='per-character manifest JSON (repeatable); manifest '
+                        'mode renders only manifest characters using their '
+                        'clip list (see .ai/studio-spec.md Â§3)')
+    p.add_argument('--manifests', default='',
+                   help='directory of manifest JSONs - every *.json loaded '
+                        'into manifest mode (default: off)')
+    p.add_argument('--deploy-only', default='',
+                   help='with --deploy: comma list of characters allowed to '
+                        'deploy; others are skipped (deploy filter)')
+    p.add_argument('--characters', default='',
+                   help='manifest mode: comma list of characters to render '
+                        '(default: every manifest)')
+    p.add_argument('--upload-model', default='',
+                   help='creation flow (.ai/packages-spec.md Â§5): model file '
+                        'of a NEW character; needs --package + --name')
+    p.add_argument('--package', action='append', default=[],
+                   help='animation package (an existing character name) to '
+                        'apply verbatim; repeatable = several exports')
+    p.add_argument('--name', default='',
+                   help='new character name (required with --upload-model)')
+    p.add_argument('--category', default='playable character',
+                   help='category for created characters (default: '
+                        '"playable character")')
+    p.add_argument('--register', action='store_true',
+                   help='copy the uploaded model (+ skins/) into '
+                        'models/<category>/<name>/ so future runs find it')
+    p.add_argument('--recipe', default='',
+                   help='recipe JSON {"character","category","model",'
+                        '"package"[,"deploy"]} - the studio writes these; '
+                        'mixing (per-clip sources) is a hard error')
     p.add_argument('--deploy', default='',
                    help='copy the rendered character folder into '
                         '<path>/<category>/<character>/ (e.g. the game assets)')
@@ -131,72 +165,6 @@ def scan_models(root):
             category = '/'.join(parts)
             yield (category, os.path.splitext(fn)[0], os.path.join(dirpath, fn),
                    anims_dir if has_anims else None)
-
-
-def reset_scene():
-    """Wipe to an empty scene."""
-    bpy.ops.wm.read_factory_settings(use_empty=True)
-
-
-def import_model(path):
-    ext = os.path.splitext(path)[1].lower()
-    if ext == '.glb' or ext == '.gltf':
-        bpy.ops.import_scene.gltf(filepath=path)
-    elif ext == '.fbx':
-        bpy.ops.import_scene.fbx(filepath=path)
-    elif ext == '.obj':
-        bpy.ops.wm.obj_import(filepath=path)
-    else:
-        raise ValueError('unsupported format: ' + ext)
-    fix_materials()
-
-
-def fix_materials():
-    """FBX/GLTF importers sometimes produce materials with alpha 0, which
-    renders fully invisible in EEVEE/Cycles. Clamp those to opaque."""
-    for mat in bpy.data.materials:
-        if not getattr(mat, 'use_nodes', False) or not mat.node_tree:
-            continue
-        for node in mat.node_tree.nodes:
-            if node.type != 'BSDF_PRINCIPLED':
-                continue
-            alpha = node.inputs.get('Alpha')
-            if alpha is not None and not alpha.is_linked and alpha.default_value == 0.0:
-                alpha.default_value = 1.0
-                mat.blend_method = 'OPAQUE'
-                print('[iso]   fixed zero-alpha material: %s' % mat.name)
-
-
-def world_bbox(objects):
-    pts = []
-    for ob in objects:
-        for corner in ob.bound_box:
-            pts.append(ob.matrix_world @ Vector(corner))
-    lo = Vector((min(p.x for p in pts), min(p.y for p in pts),
-                 min(p.z for p in pts)))
-    hi = Vector((max(p.x for p in pts), max(p.y for p in pts),
-                 max(p.z for p in pts)))
-    return lo, hi
-
-
-def eval_world_bbox(objects):
-    """World AABB of the EVALUATED meshes (includes armature deformation),
-    used for char-px framing where the staged pose matters."""
-    dg = bpy.context.evaluated_depsgraph_get()
-    pts = []
-    for ob in objects:
-        if ob.type != 'MESH':
-            continue
-        ob_eval = ob.evaluated_get(dg)
-        for corner in ob_eval.bound_box:
-            pts.append(ob_eval.matrix_world @ Vector(corner))
-    if not pts:
-        return world_bbox(objects)
-    lo = Vector((min(p.x for p in pts), min(p.y for p in pts),
-                 min(p.z for p in pts)))
-    hi = Vector((max(p.x for p in pts), max(p.y for p in pts),
-                 max(p.z for p in pts)))
-    return lo, hi
 
 
 def place_camera(cam, angle_deg, pitch_deg):
@@ -288,52 +256,6 @@ def add_shadow(radius, strength=0.5):
         plane.visible_glossy = False
     except Exception:
         pass
-
-
-def find_texture_images(model_dir):
-    """Texture candidates living next to the model or in skins/ textures/."""
-    out = []
-    for sub in ('', 'skins', 'textures'):
-        d = os.path.join(model_dir, sub) if sub else model_dir
-        if not os.path.isdir(d):
-            continue
-        for fn in sorted(os.listdir(d)):
-            if fn.startswith('.'):
-                continue
-            if fn.lower().endswith(('.png', '.jpg', '.jpeg')):
-                out.append(os.path.join(d, fn))
-    return out
-
-
-def apply_textures(texture_paths):
-    """Link the first/best-matching texture image onto every material whose
-    Base Color is not already textured. Returns number of materials touched."""
-    if not texture_paths:
-        return 0
-    loaded = {}
-    touched = 0
-    for mat in bpy.data.materials:
-        if not getattr(mat, 'use_nodes', False) or not mat.node_tree:
-            continue
-        bsdf = next((nd for nd in mat.node_tree.nodes
-                     if nd.type == 'BSDF_PRINCIPLED'), None)
-        if bsdf is None:
-            continue
-        base = bsdf.inputs['Base Color']
-        if base.is_linked:
-            continue
-        pick = next((p for p in texture_paths
-                     if os.path.splitext(os.path.basename(p))[0].lower()
-                     in mat.name.lower()), texture_paths[0])
-        if pick not in loaded:
-            loaded[pick] = bpy.data.images.load(pick)
-        tex = mat.node_tree.nodes.new('ShaderNodeTexImage')
-        tex.image = loaded[pick]
-        mat.node_tree.links.new(tex.outputs['Color'], base)
-        touched += 1
-        print('[iso]   applied texture %s -> material %s'
-              % (os.path.basename(pick), mat.name))
-    return touched
 
 
 def setup_stage(size, pitch, padding, yaw, fixed_frame=0.0, shadow=True,
@@ -497,10 +419,6 @@ def bind_action(ob, act):
             ad.action_slot = slots[0]
 
 
-def safe_name(s):
-    return re.sub(r'[^\w\-.]', '_', s.strip())
-
-
 def pick_new_action(pre_import_names):
     """Among actions created since the snapshot, return the one with the
     largest frame span (FBX imports create stub actions next to the real
@@ -563,17 +481,47 @@ def fighter_layout_root(out_root, name):
     return os.path.join(out_root, name)
 
 
-def deploy_character(char_dir, deploy_root, category, name):
-    dest = os.path.join(deploy_root, category, name) if category \
-        else os.path.join(deploy_root, name)
-    os.makedirs(os.path.dirname(dest) or deploy_root, exist_ok=True)
+def deploy_character(char_dir, dest):
+    os.makedirs(os.path.dirname(dest) or dest, exist_ok=True)
     shutil.copytree(char_dir, dest, dirs_exist_ok=True)
     print('[iso]   deployed to %s' % dest)
 
 
-def process_model(args, dirs, category, name, filepath, anims_dir=None):
-    fighter = args.target == 'fighter'
-    tag = 'fighter' if fighter else 'iso'
+def load_manifests(args):
+    """Collect --manifest files + --manifests dir into {character: manifest}."""
+    paths = list(args.manifest)
+    if args.manifests:
+        mdir = args.manifests
+        if not os.path.isdir(mdir):
+            raise SystemExit('--manifests: not a directory: %s' % mdir)
+        paths += [os.path.join(mdir, fn) for fn in sorted(os.listdir(mdir))
+                  if fn.endswith('.json')]
+    out = {}
+    for path in paths:
+        with open(path) as fh:
+            mf = json.load(fh)
+        out[mf['character']] = mf
+    return out
+
+
+def process_model(args, dirs, category, name, filepath, anims_dir=None,
+                  manifest=None):
+    if manifest:
+        # Manifest mode: all-procedural manifests take the fighter path
+        # (mapped rig + procedural clips); all-fbx-action manifests take the
+        # native-action path. Mixed sources are rejected for now.
+        procs = [c for c in manifest['clips']
+                 if c.get('source', 'procedural') == 'procedural']
+        actions_src = [c for c in manifest['clips']
+                       if c.get('source') == 'fbx-action']
+        if procs and actions_src:
+            print('[manifest] %s: mixed clip sources not supported yet '
+                  '- SKIP' % name)
+            return None
+        fighter = bool(procs)
+    else:
+        fighter = args.target == 'fighter'
+    tag = 'manifest' if manifest else ('fighter' if fighter else 'iso')
     if fighter and category:
         # scan_models keeps a model's own folder in the category unless an
         # anims/ sibling drops it; fighter layout + deploy append the name
@@ -611,10 +559,19 @@ def process_model(args, dirs, category, name, filepath, anims_dir=None):
         try:
             mapping = rig_map.resolve_mapping(arm, bone_map)
         except rig_map.RigMapError as e:
-            print('[fighter] SKIP (%s)' % e)
+            print('[%s] SKIP (%s)' % (tag, e))
             return None
-        clips = procedural_anims.generate_all(arm, mapping)
-        print('[fighter] generated %d clip(s)' % len(clips))
+        wanted = ([c['clip'] for c in manifest['clips']] if manifest
+                  else procedural_anims.FIGHTER_CLIPS)
+        package = (manifest.get('package') or 'fighter') if manifest \
+            else 'fighter'
+        try:
+            clips = procedural_anims.generate_clips(arm, mapping, wanted,
+                                                    package=package)
+        except procedural_anims.ClipAuthorError as e:
+            print('[%s] SKIP (%s)' % (tag, e))
+            return None
+        print('[%s] generated %d clip(s)' % (tag, len(clips)))
     elif anims_dir:
         n = merge_anim_folder(anims_dir)
         print('[iso]   merged %d animation(s) from anims/' % n)
@@ -656,8 +613,13 @@ def process_model(args, dirs, category, name, filepath, anims_dir=None):
     armature = next((ob.find_armature() for ob in meshes
                      if ob.find_armature()), None)
     if fighter:
-        actions = [bpy.data.actions[c] for c in procedural_anims.FIGHTER_CLIPS
+        wanted = (list(c['clip'] for c in manifest['clips'])
+                  if manifest else procedural_anims.FIGHTER_CLIPS)
+        actions = [bpy.data.actions[c] for c in wanted
                    if c in bpy.data.actions]
+        for missing in [c for c in wanted if c not in bpy.data.actions]:
+            print('[%s]   missing action %s - clip skipped'
+                  % (tag, missing))
     else:
         actions = get_actions(meshes) if armature else []
 
@@ -682,6 +644,14 @@ def process_model(args, dirs, category, name, filepath, anims_dir=None):
             if armature:
                 bind_action(armature, act)
             n = max(1, min(args.frames, int(dur) + 1)) if dur > 0 else 1
+            if manifest:
+                mf_frames = next((c.get('frames') for c in manifest['clips']
+                                  if c['clip'] == clip), None)
+                if mf_frames is None:
+                    # null/native frame count: the action's own range
+                    n = (int(dur) + 1) if dur > 0 else 1
+                else:
+                    n = max(1, int(mf_frames))
             for f in range(n):
                 if dur > 0:
                     if fighter and n > 1:
@@ -707,9 +677,15 @@ def process_model(args, dirs, category, name, filepath, anims_dir=None):
                   % (tag, clip, n, len(dirs)))
 
     if args.deploy:
-        if fighter:
-            deploy_character(fighter_layout_root(out_root, name),
-                             args.deploy, category, name)
+        if manifest and manifest.get('deploy') is None:
+            print('[%s]   manifest deploy=null - not deployed' % tag)
+        elif args.deploy_only and name not in args.deploy_only:
+            print('[%s]   deploy filter: %s not in --deploy-only - skipped'
+                  % (tag, name))
+        elif fighter:
+            dest = os.path.join(args.deploy, manifest['deploy']) \
+                if manifest else os.path.join(args.deploy, category, name)
+            deploy_character(fighter_layout_root(out_root, name), dest)
         else:
             print('[iso]   --deploy is a fighter-mode option, ignored')
 
@@ -724,14 +700,130 @@ def angle_format(angle):
     return ('%.1f' % angle)
 
 
+def load_package_manifest(pkg):
+    """The manifest of an existing character = an animation package."""
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        'manifests', pkg + '.json')
+    if not os.path.isfile(path):
+        raise SystemExit('--package: unknown package %r (no %s)'
+                         % (pkg, path))
+    with open(path) as fh:
+        return json.load(fh)
+
+
+def register_model(src, models_root, category, name):
+    """Copy an uploaded model (+ sibling skins/) into models/<cat>/<name>/."""
+    dst_dir = os.path.join(models_root, category, name)
+    os.makedirs(dst_dir, exist_ok=True)
+    dst = os.path.join(dst_dir, os.path.basename(src))
+    if os.path.abspath(src) != os.path.abspath(dst):
+        shutil.copy2(src, dst)
+        skins = os.path.join(os.path.dirname(src), 'skins')
+        if os.path.isdir(skins):
+            shutil.copytree(skins, os.path.join(dst_dir, 'skins'),
+                            dirs_exist_ok=True)
+    return dst
+
+
+def load_recipe(path):
+    with open(path) as fh:
+        rec = json.load(fh)
+    for key in ('character', 'category', 'model', 'package'):
+        if key not in rec:
+            raise SystemExit('--recipe: missing key %r in %s' % (key, path))
+    for c in rec.get('clips', []):
+        if 'source' in c:
+            raise SystemExit('--recipe: per-clip sources are forbidden '
+                             '(packages are atomic, .ai/packages-spec.md Â§1)')
+    return rec
+
+
+def create_characters(args):
+    """Creation flow: uploaded model + one animation package per export."""
+    recipes = []
+    if args.recipe:
+        rec = load_recipe(args.recipe)
+        if not os.path.isfile(rec['model']):
+            raise SystemExit('--recipe: model not found: %s' % rec['model'])
+        recipes.append(rec)
+    else:
+        if not (args.upload_model and args.name and args.package):
+            raise SystemExit('--upload-model needs --package (repeatable) '
+                             'and --name')
+        src = os.path.abspath(args.upload_model)
+        if not os.path.isfile(src):
+            raise SystemExit('--upload-model: file not found: %s' % src)
+        cat = safe_name(args.category)
+        model = register_model(src, args.models, cat, args.name) \
+            if args.register else src
+        for pkg in args.package:
+            load_package_manifest(pkg)   # fail fast on unknown packages
+            recipes.append({
+                'character': safe_name(args.name),
+                'category': cat,
+                'model': model,
+                'package': pkg,
+            })
+
+    dirs = COMPASS
+    if args.dirs:
+        wanted = set(args.dirs.split(','))
+        dirs = [d for d in COMPASS if d[0] in wanted]
+    os.makedirs(args.output, exist_ok=True)
+
+    for rec in recipes:
+        pkg_mf = load_package_manifest(rec['package'])
+        manifest = {
+            'character': rec['character'],
+            'category': rec['category'],
+            'package': rec['package'],
+            'clips': [dict(c) for c in pkg_mf['clips']],
+        }
+        if args.recipe:
+            manifest['deploy'] = rec.get('deploy')
+        elif args.deploy:
+            manifest['deploy'] = '%s/%s' % (rec['category'].replace(os.sep,
+                                                                    '/'),
+                                            rec['character'])
+        print('[create] %s <- package %s (%d clip(s))'
+              % (rec['character'], rec['package'], len(manifest['clips'])))
+        result = process_model(args, dirs, rec['category'],
+                               rec['character'], rec['model'],
+                               manifest=manifest)
+        if result is None:
+            print('[create] FAILED: %s' % rec['character'])
+            return 1
+    return 0
+
+
 def main():
     args = parse_args()
+    if args.upload_model or args.recipe:
+        sys.exit(create_characters(args))
     dirs = COMPASS
     if args.dirs:
         wanted = set(args.dirs.split(','))
         dirs = [d for d in COMPASS if d[0] in wanted]
 
+    manifests = load_manifests(args)
+    if args.deploy_only:
+        args.deploy_only = {c.strip() for c in args.deploy_only.split(',')
+                            if c.strip()}
+    if args.characters:
+        wanted = {c.strip() for c in args.characters.split(',') if c.strip()}
+        manifests = {k: v for k, v in manifests.items() if k in wanted}
+    if manifests:
+        print('[iso] manifest mode: %d character(s) - %s'
+              % (len(manifests), ', '.join(sorted(manifests))))
+
     models = list(scan_models(args.models))
+    if manifests:
+        # manifest mode: only characters that have BOTH manifest and model
+        models = [m for m in models if m[1] in manifests]
+        if not models:
+            print('[iso] manifest mode: no manifest character has a model '
+                  'under %s - nothing to do' % args.models)
+            return
     if not models:
         print('[iso] no model files found in %s' % args.models)
         return
@@ -741,8 +833,10 @@ def main():
     manifest = {'size': args.size, 'frames': args.frames, 'fps': args.fps,
                 'pitch': args.pitch, 'target': args.target, 'models': []}
     for i, (category, name, filepath, anims_dir) in enumerate(models, 1):
-        print('[%s] (%d/%d)' % (args.target, i, len(models)))
-        result = process_model(args, dirs, category, name, filepath, anims_dir)
+        print('[%s] (%d/%d)' % ('manifest' if manifests else args.target,
+                                i, len(models)))
+        result = process_model(args, dirs, category, name, filepath,
+                               anims_dir, manifest=manifests.get(name))
         if result:
             manifest['models'].append(result)
             clips = [e['clip'] for e in result['renders'] if e['clip']]
@@ -756,4 +850,5 @@ def main():
     print('[iso] done. Output in %s' % os.path.abspath(args.output))
 
 
-main()
+if __name__ == '__main__':
+    main()

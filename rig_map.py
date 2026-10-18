@@ -1,5 +1,5 @@
-# Copyright (C) 2026 Stamatis Valis
-# SPDX-License-Identifier: MIT
+﻿# Copyright (C) 2026 Stamatis Valis
+# SPDX-License-Identifier: GPL-3.0-or-later
 #
 # Humanoid bone mapping + rest-pose-agnostic posing helpers.
 #
@@ -252,7 +252,7 @@ class Rig:
 
     def _fixed_rot(self, pb):
         """Parent-chain rotation (armature space), excluding this bone's own
-        pose basis — the frame conjugation must use, not the full bone rot."""
+        pose basis â€” the frame conjugation must use, not the full bone rot."""
         fixed = (pb.matrix @ pb.matrix_basis.inverted()).to_3x3()
         return fixed.to_quaternion()
 

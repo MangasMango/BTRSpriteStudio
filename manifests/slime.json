@@ -1,0 +1,13 @@
+{
+  "character": "slime",
+  "category": "enemy",
+  "deploy": "enemy/slime",
+  "model": null,
+  "dirs": 16,
+  "gaps": ["armed_idle", "armed_walk", "armed_attack", "special_select"],
+  "clips": [
+    { "clip": "default_idle",   "frames": 1, "fps": 1.0, "source": "procedural" },
+    { "clip": "default_walk",   "frames": 8, "fps": 6.0, "source": "procedural" },
+    { "clip": "special_death",  "frames": 7, "fps": 8.0, "source": "procedural", "note": "exactly 7 frames - the only non-8 clip in the game" }
+  ]
+}

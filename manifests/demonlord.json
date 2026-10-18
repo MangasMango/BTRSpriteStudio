@@ -1,0 +1,17 @@
+{
+  "character": "demonlord",
+  "category": "boss",
+  "deploy": "boss/demonlord",
+  "model": null,
+  "dirs": 16,
+  "gaps": ["special_select"],
+  "clips": [
+    { "clip": "default_attack1", "frames": 8, "fps": 8.0, "source": "procedural", "runtime": "unreferenced" },
+    { "clip": "default_attack2", "frames": 8, "fps": 8.0, "source": "procedural", "runtime": "unreferenced" },
+    { "clip": "default_idle",    "frames": 8, "fps": 8.0, "source": "procedural", "runtime": "unreferenced" },
+    { "clip": "default_walk",    "frames": 8, "fps": 8.0, "source": "procedural", "runtime": "unreferenced" },
+    { "clip": "special_death",   "frames": 8, "fps": 8.0, "source": "procedural", "runtime": "unreferenced" },
+    { "clip": "special_intro",   "frames": 8, "fps": 8.0, "source": "procedural", "runtime": "unreferenced" },
+    { "clip": "special_laugh",   "frames": 8, "fps": 8.0, "source": "procedural", "runtime": "unreferenced" }
+  ]
+}
