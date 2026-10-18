@@ -1,7 +1,7 @@
-# 3dtoisometric
+# BTRSpriteStudio
 
 Blender-based batch generator that renders 3D models as isometric game
-sprites for the ARPG project, plus **Sprite Studio** — a raylib GUI for
+sprites for the ARPG project, plus **BTRSpriteStudio** - a raylib GUI for
 viewing, comparing, rendering and deploying those sprite sets.
 
 ## Usage
@@ -65,19 +65,19 @@ any mappable rig (Kenney / Mixamo / Unreal / Rigify naming, or a
 `bone_map.json` override). **Direction convention** follows the game
 (`iso_engine.MOVE_DIR`): S = front, N = back, E = right-facing profile.
 
-## Sprite Studio (raylib GUI)
+## BTRSpriteStudio (raylib GUI)
 
 ```
 .\studio.ps1          # or --selftest for a headless screenshot run
 ```
 
-- **Viewer** — play/scrub any clip × direction, fps slider, onion skin,
+- **Viewer** - play/scrub any clip × direction, fps slider, onion skin,
   zoom/pan, bbox overlay
-- **Grid** — all 16 directions of a clip at a glance (direction sanity)
-- **Compare** — frame-synced ours vs reference pack, blink toggle
-- **Create** — upload an FBX, inspect the rig (mapping verdict + preview),
+- **Grid** - all 16 directions of a clip at a glance (direction sanity)
+- **Compare** - frame-synced ours vs reference pack, blink toggle
+- **Create** - upload an FBX, inspect the rig (mapping verdict + preview),
   pick an animation package, queue render + deploy
-- **Queue / Deploy / Health** — Blender render queue with live log; filtered
+- **Queue / Deploy / Health** - Blender render queue with live log; filtered
   deploy with dry-run diff; contract dashboard (missing frames, token
   mismatches, stale renders)
 
@@ -93,10 +93,10 @@ Every existing character's clip set is an atomic, transplantable package
 
 - `--package` is repeatable → several exports from one upload
 - packages available: fighter/knight/warrior (7 clips), skeleton (4),
-  slime (3, 7-frame death), subservient (2), demonlord (7) — see
+  slime (3, 7-frame death), subservient (2), demonlord (7) - see
   `manifests/*.json` and [`.ai/packages-spec.md`](.ai/packages-spec.md)
 - packages missing core clips (e.g. subservient has no idle/walk) export
-  verbatim and carry a `GAP` flag — never auto-filled
+  verbatim and carry a `GAP` flag - never auto-filled
 - the rig is validated first (`inspect_model.py`): unmappable rigs are
   rejected with the exact missing bones before anything renders
 
@@ -163,18 +163,18 @@ detail. If it gets picked up, we will hash out the details together.
 
 You can submit bug reports at the issue tracker. Be sure to include:
 
-- **3dtoisometric version / commit**: the commit hash of your checkout
+- **BTRSpriteStudio version / commit**: the commit hash of your checkout
 - **Operating system and version**: e.g. "Windows 11 64bit"
 - **Blender version**: e.g. "Blender 5.2.0 LTS" (see `C:\Program Files\Blender Foundation`)
 - **Exact steps to reproduce**: what you ran and what happened, including the
   console output of `run.ps1` / `studio.ps1`. Screenshots or the model file
-  that misbehaves help a lot — a reproducible case is often deducible even
+  that misbehaves help a lot - a reproducible case is often deducible even
   if you cannot fully narrow it down.
 
 ### Submitting pull requests
 
 Before you start working on a pull request, please file an issue or ping me
-on an existing issue so we can discuss the approach and agree on it — this
+on an existing issue so we can discuss the approach and agree on it - this
 significantly reduces churn and review effort later on.
 
 - Split changes into individual commits, each adding a step that compiles
@@ -204,8 +204,8 @@ Please do not submit code that you do not understand.
 
 ## License
 
-Copyright (c) 2026 Stamatis Valis. This project is licensed under the
-**GNU General Public License v3.0 or greater** — see [LICENSE](LICENSE) for
+Copyright (C) 2026 MangasMango. This project is licensed under the
+**GNU General Public License v3.0 or greater** - see [LICENSE](LICENSE) for
 the full text (`SPDX-License-Identifier: GPL-3.0-or-later`).
 
 The bundled sample assets under `models/playable character/` are from
