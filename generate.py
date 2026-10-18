@@ -202,25 +202,27 @@ def eval_world_bbox(objects):
 def place_camera(cam, angle_deg, pitch_deg):
     """Position the camera for one compass direction.
 
-    Calibrated against the reference pack (ground truth, verified at 10x):
-    sprite N = front view, S = back, E = right-facing profile - i.e.
-    up-screen (N) is TOWARD the viewer and E is screen-right, matching
-    iso_engine.world_to_screen + MOVE_DIR.
+    Semantics follow the game's DIR_ANGLE/MOVE_DIR (iso_engine.py): folder D
+    must contain the character FACING screen-direction D, seen from the
+    fixed south-above camera. That is the opposite of the orbit that
+    produced the reference packs - the pack convention (N = front view)
+    reads as walking backwards in-game and was swapped on 2026-10-18 with
+    fix_directions.py, so the generator now bakes the correct convention
+    directly.
 
     With the model facing -Y (toe-bone direction on Kenney imports), the
-    camera position must be the original three.js mapping shifted -90:
-        rho(D) = DIR_ANGLE(D) - 90
-        horizontal pos = (sin rho, -cos rho) = (-cos(az), -sin(az))
-    The old (sin, -cos) mapping orbited 90 degrees out of phase; a
-    naive ( -cos, +sin ) 'fix' mirrors the orbit instead - both produce
-    direction sets that flip against the pack.
+    old orbit (az = +angle) put the front view in N; orbiting by
+    az = -angle reflects that about the E-W axis - E/W stay put, N/S and
+    the NE..SEE pairs mirror - putting the front view in S. Correct
+    arrangement per game logic:
+        S = front, N = back, E = right-facing profile, W = left-facing
+        profile, SE/NE = front/back-right 3/4, SW/NW = front/back-left 3/4.
 
     Key/fill lights are repositioned relative to the camera every call so
-    every direction is front-lit like the reference pack (they used to be
-    fixed in world space).
+    every direction is front-lit.
     """
     dist = cam['dist']
-    az = math.radians(angle_deg)
+    az = math.radians(-angle_deg)
     pit = math.radians(pitch_deg)
     cam.location = Vector((-math.cos(az) * math.cos(pit) * dist,
                            -math.sin(az) * math.cos(pit) * dist,
