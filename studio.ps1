@@ -1,7 +1,19 @@
-# Copyright (C) 2026 Stamatis Valis
-# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 MangasMango
 #
-# Launches Sprite Studio (raylib GUI for the sprite pipeline).
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <https://www.gnu.org/licenses/>.
+#
+# Launches BTRSpriteStudio (raylib GUI for the sprite pipeline).
 # See .ai/studio-spec.md. Usage: .\studio.ps1 [--selftest]
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
