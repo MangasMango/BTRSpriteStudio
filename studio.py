@@ -70,6 +70,38 @@ COL_WARN    = rl.Color(230, 180, 70, 255)
 COL_BAD     = rl.Color(220, 90, 90, 255)
 COL_ACCENT  = rl.Color(90, 160, 230, 255)
 
+# Alagard pixel font - only renders correctly at its native pixel sizes;
+# every UI text size is snapped up to the nearest legal size.
+FONT_PATH = os.path.join(HERE, 'font', 'alagard.ttf')
+FONT_SIZES = (12, 18, 24, 36, 48, 60, 72)
+_fonts = {}
+_font_ok = os.path.isfile(FONT_PATH)
+
+
+def snap_font_size(px):
+    if not _font_ok:
+        return px
+    return min(FONT_SIZES, key=lambda s: (abs(s - px), s))
+
+
+def get_font(px):
+    size = snap_font_size(px)
+    f = _fonts.get(size)
+    if f is None:
+        f = rl.load_font_ex(FONT_PATH.encode(), size, rl.ffi.NULL, 0)
+        rl.set_texture_filter(f.texture, rl.TEXTURE_FILTER_POINT)
+        _fonts[size] = f
+    return f
+
+
+def draw_text(text, x, y, size, color):
+    if _font_ok:
+        rl.draw_text_ex(get_font(size), str(text), rl.Vector2(float(x),
+                                                              float(y)),
+                        float(snap_font_size(size)), 1.0, color)
+    else:
+        rl.draw_text(str(text), x, y, size, color)
+
 
 def find_blender():
     import glob as _glob
@@ -443,7 +475,7 @@ class App:
         if self.upload_path and self._button(
                 rl.Rectangle(x + 120, y, 110, 28), 'Inspect rig'):
             self.start_inspect()
-        rl.draw_text(self.upload_path[-52:] or '(no file)',
+        draw_text(self.upload_path[-52:] or '(no file)',
                      x, y + 34, 13, COL_TEXT if self.upload_path else COL_DIM)
         # report summary
         ry = y + 56
@@ -451,7 +483,7 @@ class App:
         if rep:
             verdict = 'RIGGED - mappable' if rep.get('ok') \
                 else 'REJECTED'
-            rl.draw_text('%s  (%d bones, %d mesh(es))'
+            draw_text('%s  (%d bones, %d mesh(es))'
                          % (verdict,
                             (rep.get('armature') or {}).get('bone_count', 0),
                             len(rep.get('meshes', []))),
@@ -459,11 +491,11 @@ class App:
             ry += 20
             mp = rep.get('mapping') or {}
             if not mp.get('ok'):
-                rl.draw_text((mp.get('error') or rep.get('error')
+                draw_text((mp.get('error') or rep.get('error')
                               or '')[:70], x, ry, 13, COL_BAD)
                 ry += 18
             acts = rep.get('actions', [])
-            rl.draw_text('native actions: %d | textures: %d | upright: %s'
+            draw_text('native actions: %d | textures: %d | upright: %s'
                          % (len(acts), len(rep.get('textures', [])),
                             (rep.get('rest') or {}).get('upright')),
                          x, ry, 13, COL_DIM)
@@ -477,18 +509,18 @@ class App:
                     rl.Vector2(0, 0), 0.0, rl.WHITE)
         elif self.inspect_thread and self.inspect_thread.is_alive():
             for i, ln in enumerate(list(self.inspect_log)[-8:]):
-                rl.draw_text(ln[:64], x, ry + i * 16, 12, COL_DIM)
+                draw_text(ln[:64], x, ry + i * 16, 12, COL_DIM)
         for i, ln in enumerate(self.create_msg):
-            rl.draw_text(ln[:70], x, ry + 200 + i * 16, 13, COL_WARN)
+            draw_text(ln[:70], x, ry + 200 + i * 16, 13, COL_WARN)
         # â”€â”€ creation column â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         cx = x + col_w
-        rl.draw_text('name:', cx, y + 6, 14, COL_TEXT)
+        draw_text('name:', cx, y + 6, 14, COL_TEXT)
         box = rl.Rectangle(cx + 50, y + 2, 220, 24)
         rl.draw_rectangle_rec(box, COL_BG if not self.name_focus
                               else rl.Color(20, 26, 38, 255))
         rl.draw_rectangle_lines_ex(box, 1, COL_ACCENT if self.name_focus
                                    else COL_LINE)
-        rl.draw_text(self.name_buf or '<click, type name>', cx + 58,
+        draw_text(self.name_buf or '<click, type name>', cx + 58,
                      y + 7, 14, COL_TEXT if self.name_buf else COL_DIM)
         if self._clicked(box):
             self.name_focus = True
@@ -503,11 +535,11 @@ class App:
             if rl.is_key_pressed(rl.KEY_BACKSPACE):
                 self.name_buf = self.name_buf[:-1]
         ry2 = y + 40
-        rl.draw_text('category:', cx, ry2 + 4, 14, COL_TEXT)
+        draw_text('category:', cx, ry2 + 4, 14, COL_TEXT)
         if self._button(rl.Rectangle(cx + 70, ry2, 190, 24),
                         CATEGORIES[self.cat_idx]):
             self.cat_idx = (self.cat_idx + 1) % len(CATEGORIES)
-        rl.draw_text('deploy to game assets:', cx, ry2 + 36, 14, COL_TEXT)
+        draw_text('deploy to game assets:', cx, ry2 + 36, 14, COL_TEXT)
         hit = rl.Rectangle(cx + 210, ry2 + 34, 18, 18)
         rl.draw_rectangle_rec(hit, COL_PANEL)
         rl.draw_rectangle_lines_ex(hit, 1, COL_LINE)
@@ -517,7 +549,7 @@ class App:
             self.create_deploy = not self.create_deploy
         # package picker
         py = ry2 + 66
-        rl.draw_text('ANIMATION PACKAGE(S) - one export per tick, '
+        draw_text('ANIMATION PACKAGE(S) - one export per tick, '
                      'verbatim, no mixing', cx, py, 13, COL_DIM)
         py += 22
         for pkg in self.chars:
@@ -534,7 +566,7 @@ class App:
                 self.create_pkgs ^= {pkg}
             gaps = mf.get('gaps') or []
             note = ' (GAP: +%d missing clips)' % len(gaps) if gaps else ''
-            rl.draw_text('%s  %d clip(s)%s'
+            draw_text('%s  %d clip(s)%s'
                          % (pkg, len(mf['clips']), note),
                          cx + 26, py, 14, COL_WARN if gaps else COL_TEXT)
             py += 24
@@ -544,14 +576,14 @@ class App:
         if self.create_msg:
             my = py + 46
             for ln in self.create_msg:
-                rl.draw_text(ln[:70], cx, my, 13, COL_DIM)
+                draw_text(ln[:70], cx, my, 13, COL_DIM)
                 my += 16
 
     def draw_viewer(self, x, y, w, h, clip_path, reference=None, tag=None):
         frames = frames_in(clip_path, self.sel_dir)
         rl.draw_rectangle(x, y, w, h, COL_PANEL)
         if not frames:
-            rl.draw_text('(no frames - queue a render)', x + 16, y + h // 2,
+            draw_text('(no frames - queue a render)', x + 16, y + h // 2,
                          16, COL_DIM)
             return
         if self.playing:
@@ -565,7 +597,7 @@ class App:
         self._blit(tex, x, y, w, h)
         if self.bbox:
             self._bbox_overlay(frames[idx], x, y, w, h)
-        rl.draw_text('%s  %s  frame %d/%d  %s'
+        draw_text('%s  %s  frame %d/%d  %s'
                      % (os.path.basename(clip_path), self.sel_dir,
                         idx + 1, len(frames), tag or ''),
                      x + 10, y + 6, 14, COL_TEXT)
@@ -578,7 +610,7 @@ class App:
                     self._blit(rtex, x, y, w, h)
                 else:
                     self._blit(rtex, x + w // 2, y, w // 2, h // 2)
-                rl.draw_text('REF', x + 10, y + h - 24, 14, COL_WARN)
+                draw_text('REF', x + 10, y + h - 24, 14, COL_WARN)
 
     def _blit(self, tex, x, y, w, h, tint=None):
         if not tex:
@@ -609,14 +641,14 @@ class App:
         rw = (box[2] - box[0]) * k
         rh = (box[3] - box[1]) * k
         rl.draw_rectangle_lines(int(rx), int(ry), int(rw), int(rh), COL_ACCENT)
-        rl.draw_text('%dx%d' % (rw, rh), int(rx), int(ry - 16), 12, COL_ACCENT)
+        draw_text('%dx%d' % (rw, rh), int(rx), int(ry - 16), 12, COL_ACCENT)
 
     def draw_grid(self, x, y, w, h):
         path = self.clip_path(self.sel_char, self.sel_clip, 0) \
             or self.clip_path(self.sel_char, self.sel_clip, 1)
         rl.draw_rectangle(x, y, w, h, COL_PANEL)
         if not path:
-            rl.draw_text('(nothing rendered for this clip)', x + 16,
+            draw_text('(nothing rendered for this clip)', x + 16,
                          y + h // 2, 16, COL_DIM)
             return
         cols = 4
@@ -642,17 +674,17 @@ class App:
                 self.screen = 'VIEW'
                 self.anim_t = 0.0
             color = COL_SEL if d == self.sel_dir else COL_TEXT
-            rl.draw_text(d, cell_x + 6, cell_y + ch - 26, 14, color)
+            draw_text(d, cell_x + 6, cell_y + ch - 26, 14, color)
             if frames:
                 mark = self.expected_frames(self.sel_char, self.sel_clip)
                 ok = mark is None or len(frames) >= mark
-                rl.draw_text('%d%s' % (len(frames), '' if ok else '!'),
+                draw_text('%d%s' % (len(frames), '' if ok else '!'),
                              cell_x + cw - 40, cell_y + ch - 26, 14,
                              COL_OK if ok else COL_BAD)
             else:
-                rl.draw_text('-', cell_x + cw - 40, cell_y + ch - 26, 14,
+                draw_text('-', cell_x + cw - 40, cell_y + ch - 26, 14,
                              COL_DIM)
-        rl.draw_text('Grid: click a cell to open it in the viewer',
+        draw_text('Grid: click a cell to open it in the viewer',
                      x + 10, y + 8, 14, COL_DIM)
 
     def draw_compare(self, x, y, w, h):
@@ -663,23 +695,23 @@ class App:
             self.draw_viewer(x, y, w, h, ref_path, tag='REF')
             return
         half = w // 2
-        rl.draw_text('OURS', x + 10, y + 8, 16, COL_ACCENT)
-        rl.draw_text('REFERENCE', x + half + 10, y + 8, 16, COL_WARN)
+        draw_text('OURS', x + 10, y + 8, 16, COL_ACCENT)
+        draw_text('REFERENCE', x + half + 10, y + 8, 16, COL_WARN)
         if self_path:
             self.draw_viewer(x, y + 28, half, h - 28, self_path, tag='OURS')
         else:
             rl.draw_rectangle(x, y + 28, half, h - 28, COL_PANEL)
-            rl.draw_text('(no output)', x + 16, y + 28 + h // 2, 16, COL_DIM)
+            draw_text('(no output)', x + 16, y + 28 + h // 2, 16, COL_DIM)
         if ref_path:
             self.draw_viewer(x + half, y + 28, half, h - 28, ref_path,
                              tag='REF')
         else:
             rl.draw_rectangle(x + half, y + 28, half, h - 28, COL_PANEL)
-            rl.draw_text('(no reference)', x + half + 16, y + 28 + h // 2,
+            draw_text('(no reference)', x + half + 16, y + 28 + h // 2,
                          16, COL_DIM)
 
     def draw_queue(self, x, y, w, h):
-        rl.draw_text('Queue: renders one Blender job at a time '
+        draw_text('Queue: renders one Blender job at a time '
                      '(manifest mode, output/)', x + 10, y + 8, 14, COL_DIM)
         y0 = y + 30
         for job in self.runner.jobs[-12:]:
@@ -689,7 +721,7 @@ class App:
                               COL_PANEL if job.status != 'running'
                               else rl.Color(40, 50, 66, 255))
             label = job.char or 'recipe:%s' % os.path.basename(job.recipe)
-            rl.draw_text('%s  dirs=%s  %s' % (label, job.dirs or 'all',
+            draw_text('%s  dirs=%s  %s' % (label, job.dirs or 'all',
                                               job.status),
                          x + 18, y0 + 5, 14, col)
             y0 += 30
@@ -703,16 +735,16 @@ class App:
         rl.draw_rectangle(x + 10, ly, w - 20, h - (ly - y) - 10, COL_BG)
         lines = list(self.runner.log)[-40:]
         for i, ln in enumerate(lines):
-            rl.draw_text(ln[:150], x + 16, ly + 8 + i * 16, 13, COL_DIM)
+            draw_text(ln[:150], x + 16, ly + 8 + i * 16, 13, COL_DIM)
 
     def draw_deploy(self, x, y, w, h):
-        rl.draw_text('Deploy: copy output -> game assets, ONLY selected '
+        draw_text('Deploy: copy output -> game assets, ONLY selected '
                      'characters', x + 10, y + 8, 14, COL_DIM)
         y0 = y + 32
         for char in self.chars:
             mf = self.manifests[char]
             if not mf.get('deploy'):
-                rl.draw_text('%-16s (no deploy target)' % char,
+                draw_text('%-16s (no deploy target)' % char,
                              x + 18, y0, 14, COL_DIM)
                 y0 += 24
                 continue
@@ -723,7 +755,7 @@ class App:
                 rl.draw_rectangle(x + 14, y0 + 4, 10, 10, COL_OK)
             if self._clicked(hit):
                 self.deploy_sel ^= {char}
-            rl.draw_text('%-16s -> assets/%s' % (char, mf['deploy']),
+            draw_text('%-16s -> assets/%s' % (char, mf['deploy']),
                          x + 36, y0, 14, COL_TEXT)
             y0 += 24
         if self._button(rl.Rectangle(x + 10, y0 + 10, 130, 28), 'Dry run'):
@@ -733,7 +765,7 @@ class App:
             self.deploy_log = self._deploy(dry=False)
         y0 += 52
         for ln in self.deploy_log[-30:]:
-            rl.draw_text(ln[:140], x + 14, y0, 13, COL_DIM)
+            draw_text(ln[:140], x + 14, y0, 13, COL_DIM)
             y0 += 16
 
     def _deploy(self, dry):
@@ -826,11 +858,11 @@ class App:
         col_map = {'NO_MODEL': COL_WARN, 'MISSING_FRAMES': COL_BAD,
                    'TOKEN_MISMATCH': COL_BAD, 'STALE': COL_WARN,
                    'UNREFERENCED': COL_DIM, 'MISSING_RENDER': COL_WARN}
-        rl.draw_text('%d finding(s)' % len(rows), x + 110, y + 14, 14,
+        draw_text('%d finding(s)' % len(rows), x + 110, y + 14, 14,
                      COL_OK if not rows else COL_TEXT)
         y0 = y + 44
         for char, kind, detail in rows[:60]:
-            rl.draw_text('%-16s %-16s %s' % (char, kind, detail),
+            draw_text('%-16s %-16s %s' % (char, kind, detail),
                          x + 14, y0, 13, col_map.get(kind, COL_TEXT))
             y0 += 17
 
@@ -844,14 +876,14 @@ class App:
             active = self.screen == key
             if active:
                 rl.draw_rectangle_rec(hit, COL_SEL)
-            rl.draw_text(label, x + 18, 12 + i * 30, 15,
+            draw_text(label, x + 18, 12 + i * 30, 15,
                          rl.WHITE if active else COL_TEXT)
             if self._clicked(hit):
                 self.screen = key
                 if key == 'HEALTH':
                     self.health = None
         y = 8 + len(SCREENS) * 30 + 12
-        rl.draw_text('CHARACTER', x + 12, y, 12, COL_DIM)
+        draw_text('CHARACTER', x + 12, y, 12, COL_DIM)
         y += 18
         for char in self.chars:
             mf = self.manifests[char]
@@ -860,31 +892,31 @@ class App:
             hit = rl.Rectangle(x + 8, y, rail_w - 16, 22)
             if char == self.sel_char:
                 rl.draw_rectangle_rec(hit, rl.Color(50, 50, 60, 255))
-            rl.draw_text(('  ' if has_model else '! ') + char,
+            draw_text(('  ' if has_model else '! ') + char,
                          x + 14, y + 2, 14, col)
             if self._clicked(hit):
                 self.select(char)
             y += 24
         y += 8
-        rl.draw_text('CLIP', x + 12, y, 12, COL_DIM)
+        draw_text('CLIP', x + 12, y, 12, COL_DIM)
         y += 18
         for c in self.manifests.get(self.sel_char, {}).get('clips', []):
             hit = rl.Rectangle(x + 24, y, rail_w - 40, 22)
             if c['clip'] == self.sel_clip:
                 rl.draw_rectangle_rec(hit, rl.Color(50, 50, 60, 255))
-            rl.draw_text(c['clip'], x + 30, y + 2, 14, COL_TEXT)
+            draw_text(c['clip'], x + 30, y + 2, 14, COL_TEXT)
             if self._clicked(hit):
                 self.select(self.sel_char, c['clip'])
             y += 24
         y += 8
-        rl.draw_text('DIR', x + 12, y, 12, COL_DIM)
+        draw_text('DIR', x + 12, y, 12, COL_DIM)
         y += 18
         for d in DIRS:
             hit = rl.Rectangle(x + 24 + (DIRS.index(d) // 8) * 100,
                                y + (DIRS.index(d) % 8) * 22, 44, 20)
             active = d == self.sel_dir
             rl.draw_rectangle_rec(hit, COL_SEL if active else COL_BG)
-            rl.draw_text(d, x + 32 + (DIRS.index(d) // 8) * 100,
+            draw_text(d, x + 32 + (DIRS.index(d) // 8) * 100,
                          y + 2 + (DIRS.index(d) % 8) * 22, 13,
                          rl.WHITE if active else COL_TEXT)
             if self._clicked(hit):
@@ -911,7 +943,7 @@ class App:
                 t = (rl.get_mouse_position().x - m.x) / m.width
                 self.playing = False
                 self.anim_t = t * len(frames) / max(0.5, self.fps)
-        rl.draw_text('fps %.1f' % self.fps, x + 320, y + 4, 14, COL_TEXT)
+        draw_text('fps %.1f' % self.fps, x + 320, y + 4, 14, COL_TEXT)
         self.fps = self._slider(rl.Rectangle(x + 380, y + 6, 120, 16),
                                 self.fps, 0.5, 16.0)
 
@@ -954,7 +986,7 @@ class App:
                                      reference=ref if ref != path else None)
                 else:
                     rl.draw_rectangle(x, 40, w, h - 40, COL_PANEL)
-                    rl.draw_text('(nothing rendered - Queue screen)',
+                    draw_text('(nothing rendered - Queue screen)',
                                  x + 16, 100, 16, COL_DIM)
             elif self.screen == 'GRID':
                 self.draw_grid(x, 40, w, h - 40)
@@ -968,7 +1000,7 @@ class App:
                 self.draw_deploy(x, 40, w, h - 40)
             elif self.screen == 'HEALTH':
                 self.draw_health(x, 40, w, h - 40)
-            rl.draw_text('[space] play  [arrows] frame  [G]rid  [C]ompare  '
+            draw_text('[space] play  [arrows] frame  [G]rid  [C]ompare  '
                          '[N]ew character  [R]ender  [D]eploy  [F1] health  '
                          '[O]nion  [B]link  [H] bbox  [wheel] zoom',
                          x, rl.get_screen_height() - 24, 12, COL_DIM)
@@ -977,7 +1009,7 @@ class App:
                 rl.take_screenshot(
                     ('studio_shot_%d_%s.png' % (frame_i, self.screen))
                     .encode())
-            if selftest and frame_i >= 50:
+            if selftest and frame_i >= len(stages) * 10:
                 break
         rl.close_window()
 
@@ -1038,7 +1070,7 @@ class App:
         rl.draw_rectangle_rec(rect, COL_SEL if hov else
                               rl.Color(46, 46, 54, 255))
         rl.draw_rectangle_lines_ex(rect, 1, COL_LINE)
-        rl.draw_text(label, int(rect.x + 8), int(rect.y + 6), 14, rl.WHITE)
+        draw_text(label, int(rect.x + 8), int(rect.y + 6), 14, rl.WHITE)
         return self._clicked(rect)
 
     def _slider(self, rect, value, lo, hi):
