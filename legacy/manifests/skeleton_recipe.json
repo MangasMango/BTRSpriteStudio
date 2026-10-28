@@ -1,0 +1,7 @@
+{
+  "character": "skeleton",
+  "category": "enemy",
+  "model": "C:\\repos\\3dtoIsometric\\models\\enemy\\skeleton\\skeleton.glb",
+  "package": "skeleton",
+  "deploy": "enemy/skeleton"
+}

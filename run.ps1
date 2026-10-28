@@ -13,8 +13,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #
-# Generates isometric sprites: scans models/ and writes PNGs to output/.
-# Usage: .\run.ps1 [extra generate.py args, e.g. --frames 6 --dirs E,N,SE]
+# Converts a rigged model with animations into 16-direction sprite clips.
+# Usage: .\run.ps1 --input "<model file or folder>" [extra convert.py args,
+#        e.g. --category enemy --name skeleton --frames 8 --char-px 50]
 $ErrorActionPreference = 'Stop'
 $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 
@@ -23,4 +24,4 @@ $blender = Get-ChildItem "C:\Program Files\Blender Foundation\*\blender.exe" -Er
     Select-Object -First 1 -ExpandProperty FullName
 if (-not $blender) { Write-Error "Blender not found in C:\Program Files\Blender Foundation"; exit 1 }
 
-& $blender --background --python (Join-Path $here 'generate.py') -- --models (Join-Path $here 'models') --output (Join-Path $here 'output') @args
+& $blender --background --python (Join-Path $here 'convert.py') -- @args
