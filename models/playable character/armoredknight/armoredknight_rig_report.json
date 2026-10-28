@@ -1,0 +1,50 @@
+{
+  "input": "C:\\repos\\3dtoIsometric\\models\\playable character\\armoredknight\\armoredknight.glb",
+  "out": "C:\\repos\\3dtoIsometric\\models\\playable character\\armoredknight\\armoredknight_rigged.glb",
+  "steps": [
+    "rigify rig generated + stripped to canonical",
+    "exported C:\\repos\\3dtoIsometric\\models\\playable character\\armoredknight\\armoredknight_rigged.glb"
+  ],
+  "warnings": [],
+  "meshes": [
+    "armoredknight"
+  ],
+  "existing_armature": [],
+  "bbox": {
+    "lo": [
+      -2.4105372428894043,
+      -1.7118768692016602,
+      0.0
+    ],
+    "hi": [
+      2.4105372428894043,
+      1.7118768692016602,
+      5.5943074226379395
+    ]
+  },
+  "weights": "hybrid (heat + 22 distance-filled)",
+  "mapping": {
+    "Hips": "Hips",
+    "Spine": "Spine",
+    "Chest": "Chest",
+    "UpperChest": "UpperChest",
+    "Neck": "Neck",
+    "Head": "Head",
+    "LeftUpLeg": "LeftUpLeg",
+    "LeftLeg": "LeftLeg",
+    "LeftFoot": "LeftFoot",
+    "LeftToes": "LeftToes",
+    "RightUpLeg": "RightUpLeg",
+    "RightLeg": "RightLeg",
+    "RightFoot": "RightFoot",
+    "RightToes": "RightToes",
+    "LeftShoulder": "LeftShoulder",
+    "LeftArm": "LeftArm",
+    "LeftForeArm": "LeftForeArm",
+    "LeftHand": "LeftHand",
+    "RightShoulder": "RightShoulder",
+    "RightArm": "RightArm",
+    "RightForeArm": "RightForeArm",
+    "RightHand": "RightHand"
+  }
+}

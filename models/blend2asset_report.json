@@ -1,0 +1,202 @@
+[
+  {
+    "source": "C:\\repos\\flare-game\\art_src\\characters\\skeleton\\skeleton.blend",
+    "objects": [
+      {
+        "name": "Camera",
+        "type": "CAMERA",
+        "visible_render": true,
+        "materials": []
+      },
+      {
+        "name": "KingdomCrossbow",
+        "type": "MESH",
+        "visible_render": true,
+        "materials": [
+          "Silver",
+          "Wood"
+        ],
+        "tris": 272,
+        "vert_count": 151
+      },
+      {
+        "name": "RenderPlatform",
+        "type": "EMPTY",
+        "visible_render": true,
+        "materials": []
+      },
+      {
+        "name": "ShadowPlane",
+        "type": "MESH",
+        "visible_render": true,
+        "materials": [
+          "Shadow.001"
+        ],
+        "tris": 2,
+        "vert_count": 4
+      },
+      {
+        "name": "SkelArm",
+        "type": "ARMATURE",
+        "visible_render": true,
+        "materials": []
+      },
+      {
+        "name": "Skeleton",
+        "type": "MESH",
+        "visible_render": true,
+        "materials": [
+          "Bone",
+          "ChitinArmor",
+          "Fur"
+        ],
+        "tris": 3532,
+        "vert_count": 2043
+      },
+      {
+        "name": "SkullSword",
+        "type": "MESH",
+        "visible_render": true,
+        "materials": [
+          "Steel",
+          "Steel.001"
+        ],
+        "tris": 1262,
+        "vert_count": 629
+      },
+      {
+        "name": "SpikeShield",
+        "type": "MESH",
+        "visible_render": true,
+        "materials": [
+          "ChitinArmor",
+          "Wood"
+        ],
+        "tris": 88,
+        "vert_count": 72
+      },
+      {
+        "name": "Sun",
+        "type": "LIGHT",
+        "visible_render": true,
+        "materials": []
+      },
+      {
+        "name": "Sun.001",
+        "type": "LIGHT",
+        "visible_render": true,
+        "materials": []
+      },
+      {
+        "name": "Sun.002",
+        "type": "LIGHT",
+        "visible_render": true,
+        "materials": []
+      }
+    ],
+    "materials": [
+      {
+        "name": "Bone",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.603,
+          0.592,
+          0.423
+        ],
+        "images": []
+      },
+      {
+        "name": "ChitinArmor",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.934,
+          0.92,
+          0.814
+        ],
+        "images": []
+      },
+      {
+        "name": "Fur",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.19,
+          0.142,
+          0.107
+        ],
+        "images": []
+      },
+      {
+        "name": "Shadow.001",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.216,
+          0.216,
+          0.216
+        ],
+        "images": []
+      },
+      {
+        "name": "Silver",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.774,
+          0.774,
+          0.774
+        ],
+        "images": []
+      },
+      {
+        "name": "Steel",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.329,
+          0.329,
+          0.329
+        ],
+        "images": []
+      },
+      {
+        "name": "Steel.001",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.17,
+          0.319,
+          1.0
+        ],
+        "images": []
+      },
+      {
+        "name": "Wood",
+        "use_nodes": true,
+        "diffuse_color": [
+          0.364,
+          0.26,
+          0.183
+        ],
+        "images": []
+      }
+    ],
+    "picked": [
+      "Skeleton",
+      "SkullSword",
+      "SpikeShield"
+    ],
+    "export": {
+      "path": "C:\\repos\\3dtoIsometric\\models\\enemy\\skeleton\\skeleton.glb",
+      "tris": 4882,
+      "skins_dir": "C:\\repos\\3dtoIsometric\\models\\enemy\\skeleton\\skins",
+      "glb": "C:\\repos\\3dtoIsometric\\models\\enemy\\skeleton\\skeleton.glb"
+    },
+    "warnings": [
+      "material color: Bone -> (0.34, 0.32, 0.28)",
+      "material color: ChitinArmor -> (0.38, 0.36, 0.31)",
+      "material color: Fur -> (0.06, 0.06, 0.05)",
+      "material color: Steel -> (0.16, 0.17, 0.19)",
+      "material color: Steel.001 -> (0.10, 0.18, 0.42)",
+      "material color: Wood -> (0.18, 0.13, 0.08)",
+      "grunge wired: Bone, ChitinArmor, Fur, Shadow.001, Silver, Steel, Steel.001, Wood",
+      "exported 4882 tris -> C:\\repos\\3dtoIsometric\\models\\enemy\\skeleton\\skeleton.glb"
+    ],
+    "armature": "SkelArm"
+  }
+]

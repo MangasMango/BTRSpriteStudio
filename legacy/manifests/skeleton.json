@@ -1,0 +1,14 @@
+{
+  "character": "skeleton",
+  "category": "reference",
+  "deploy": null,
+  "model": "models/enemy/skeleton/skeleton.glb",
+  "dirs": 16,
+  "package": "skeleton",
+  "clips": [
+    { "clip": "default_idle",   "frames": 8, "fps": 4, "source": "procedural" },
+    { "clip": "default_walk",   "frames": 8, "fps": 6, "source": "procedural" },
+    { "clip": "default_attack", "frames": 8, "fps": 8, "source": "procedural" },
+    { "clip": "special_death",  "frames": 8, "fps": 8, "source": "procedural" }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "input": "C:\\repos\\3dtoIsometric\\models\\enemy\\skeleton\\skeleton.glb",
+  "out": "C:\\repos\\3dtoIsometric\\models\\enemy\\skeleton\\skeleton_rigged.glb",
+  "steps": [],
+  "warnings": [],
+  "meshes": [
+    "Skeleton",
+    "SkullSword",
+    "SpikeShield"
+  ],
+  "existing_armature": [
+    "SkelArm"
+  ],
+  "mapping": {
+    "Spine": "Back",
+    "Head": "Head",
+    "Hips": "Hip",
+    "LeftUpLeg": "Thigh.Left",
+    "LeftLeg": "Shin.Left",
+    "LeftFoot": "Foot.Left",
+    "LeftToes": "Toes.Left",
+    "RightUpLeg": "Thigh.Right",
+    "RightLeg": "Shin.Right",
+    "RightFoot": "Foot.Right",
+    "RightToes": "Toes.Right",
+    "LeftArm": "Upperarm.Left",
+    "LeftForeArm": "Forearm.Left",
+    "LeftHand": "Hand.Left",
+    "RightArm": "Upperarm.Right",
+    "RightForeArm": "Forearm.Right",
+    "RightHand": "Hand.Right"
+  }
+}
