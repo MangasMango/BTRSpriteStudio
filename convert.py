@@ -40,7 +40,7 @@ from mathutils import Matrix, Vector
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from model_io import (reset_scene, import_model, eval_world_bbox,
-                      world_bbox, safe_name)
+                      world_bbox, safe_name, override_textures)
 
 COMPASS = [
     ('E', 0.0), ('NEE', 22.5), ('NE', 45.0), ('NNE', 67.5),
@@ -561,6 +561,13 @@ def main():
                    help='render with the legacy directional key/fill lights '
                         'baked into the sprites (default: flat unlit '
                         'albedo, the game light system shades in code)')
+    p.add_argument('--textures', default='',
+                   help='texture file or folder; images matching a material '
+                        'name replace that material\'s albedo '
+                        '("<stem>_e" = glow layer)')
+    p.add_argument('--no-glow', action='store_true',
+                   help='ignore "<stem>_e" siblings (use when the _e export '
+                        'is an ID/mask atlas instead of an emission map)')
     p.add_argument('--deploy', default='',
                    help='game assets root; copies output/<category>/<name> '
                         'there after rendering')
@@ -588,6 +595,9 @@ def main():
     import_model(files[0])
     if not args.baked_shade:
         flat_materials()
+    if args.textures:
+        override_textures([args.textures], flat=not args.baked_shade,
+                          allow_glow=not args.no_glow, tag='convert')
     if len(files) > 1:
         merge_anim_files(files)
 

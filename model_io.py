@@ -253,6 +253,98 @@ def apply_textures(texture_paths, tag='model_io'):
     return touched
 
 
+def override_textures(texture_paths, flat=True, allow_glow=True,
+                      tag='model_io'):
+    """Force-replace each material's albedo with an external texture file
+    matched by filename stem (cowboy_skinWAR2.png -> material
+    cowboy_skinWAR2). Files with no matching material are skipped and
+    logged. A "<stem>_e" sibling is wired as a glow layer ONLY when
+    allow_glow (some "_e" exports are ID/mask atlases, not emission maps).
+    Returns number of materials touched."""
+    if not texture_paths:
+        return 0
+    texs = {}
+    for p in texture_paths:
+        if os.path.isfile(p) and p.lower().endswith(('.png', '.jpg', '.jpeg')):
+            texs[os.path.splitext(os.path.basename(p))[0].lower()] = p
+        elif os.path.isdir(p):
+            for fn in sorted(os.listdir(p)):
+                if fn.startswith('.'):
+                    continue
+                if fn.lower().endswith(('.png', '.jpg', '.jpeg')):
+                    texs[os.path.splitext(fn)[0].lower()] = os.path.join(p, fn)
+    if not texs:
+        print('[%s] override_textures: no image files found' % tag)
+        return 0
+    touched = 0
+    for mat in bpy.data.materials:
+        if not getattr(mat, 'use_nodes', False) or not mat.node_tree:
+            continue
+        bsdf = next((nd for nd in mat.node_tree.nodes
+                     if nd.type == 'BSDF_PRINCIPLED'), None)
+        if bsdf is None:
+            continue
+        stem = mat.name.lower()
+        albedo_p = texs.get(stem)
+        glow_p = (texs.get(stem + '_e') or texs.get(stem + '_emission')
+                  if allow_glow else None)
+        if albedo_p is None and glow_p is None:
+            continue
+        tree = mat.node_tree
+
+        def tex_node(path):
+            node = tree.nodes.new('ShaderNodeTexImage')
+            node.image = bpy.data.images.load(path)
+            node.image.colorspace_settings.name = 'sRGB'
+            return node
+
+        albedo_tex = tex_node(albedo_p) if albedo_p else None
+        glow_tex = tex_node(glow_p) if glow_p else None
+        base = bsdf.inputs['Base Color']
+        for lk in list(base.links):
+            tree.links.remove(lk)
+        base.default_value = (0.0, 0.0, 0.0, 1.0)
+        em_col = bsdf.inputs.get('Emission Color')
+        em_str = bsdf.inputs.get('Emission Strength')
+        for lk in list(em_col.links):
+            tree.links.remove(lk)
+        if flat:
+            # flat mode: everything renders through emission
+            if em_str is not None and not em_str.is_linked:
+                em_str.default_value = 1.0
+            if albedo_tex and glow_tex:
+                mix = tree.nodes.new('ShaderNodeMix')
+                mix.data_type = 'RGBA'
+                mix.blend_type = 'ADD'
+                mix.inputs['Factor'].default_value = 1.0
+                tree.links.new(albedo_tex.outputs['Color'],
+                               mix.inputs[6])
+                tree.links.new(glow_tex.outputs['Color'], mix.inputs[7])
+                tree.links.new(mix.outputs[2], em_col)
+                print('[%s] override %s: albedo+glow -> %s'
+                      % (tag, os.path.basename(albedo_p), mat.name))
+            elif albedo_tex:
+                tree.links.new(albedo_tex.outputs['Color'], em_col)
+                print('[%s] override %s: albedo -> %s'
+                      % (tag, os.path.basename(albedo_p), mat.name))
+            else:
+                tree.links.new(glow_tex.outputs['Color'], em_col)
+                print('[%s] override %s: glow only -> %s'
+                      % (tag, os.path.basename(glow_p), mat.name))
+        else:
+            if albedo_tex:
+                tree.links.new(albedo_tex.outputs['Color'], base)
+                base.default_value = (0.8, 0.8, 0.8, 1.0)
+            if glow_tex and em_col is not None:
+                tree.links.new(glow_tex.outputs['Color'], em_col)
+                if em_str is not None and not em_str.is_linked:
+                    em_str.default_value = 1.0
+            print('[%s] override %s (lit mode) -> %s'
+                  % (tag, os.path.basename(albedo_p or glow_p), mat.name))
+        touched += 1
+    return touched
+
+
 def safe_name(s):
     import re
     return re.sub(r'[^\w\-.]', '_', s.strip())
